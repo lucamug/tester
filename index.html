@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en" translate="no">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="google" content="notranslate">
+    <meta name="viewport" content="width=device-width,initial-scale=1,shrink-to-fit=no">
+    <title>Tester</title>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" rel="stylesheet">
+    <link rel="icon" href="favicon.ico" type="image/x-icon">
+</head>
+
+<body>
+    <script src="tester.js"></script>
+    <main></main>
+    <script>
+        var app = Elm.Tester.init(
+            { node: document.querySelector('main')
+            , flags: document.location.href
+            }
+        )
+        app.ports.dataToJs.subscribe(
+            (data) => {
+                try {
+                    const json = JSON.parse(data.resultAsJson);
+                    const translations = getTranslations(json, data.path);
+                    app.ports.dataFromJs.send(translations);
+                } catch {
+                    app.ports.dataFromJs.send(null);
+                }
+            }
+        )
+        function getTranslations(response, path) {
+            // Extract data from the object response "response" following the
+            // structure described in "path"
+            let result = [];
+            let current = response;
+            for (let key of path) {
+                if (key === '*') {
+                    if (Array.isArray(current)) {
+                        current.forEach(item => {
+                            result.push(...getTranslations(item, path.slice(path.indexOf('*') + 1)));
+                        });
+                    } else {
+                        result.push(current);
+                    }
+                    return result;
+                } else {
+                    current = current[key];
+                }
+            }
+            if (Array.isArray(current)) {
+                result.push(...current);
+            } else {
+                result.push(current);
+            }
+            return result;
+        }
+
+    </script>
+</body>
+
+</html>
